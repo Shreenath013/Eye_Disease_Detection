@@ -1,3 +1,7 @@
+print("=" * 50)
+print("CREATE_SUPERUSER.PY IS RUNNING")
+print("=" * 50)
+
 import os
 import django
 
