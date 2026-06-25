@@ -187,10 +187,9 @@ def login_view(request):
 
 
 def user_logout(request):
-
     logout(request)
+    request.session.flush()
     return redirect("home")
-
 
 def register(request):
     if request.user.is_authenticated:
