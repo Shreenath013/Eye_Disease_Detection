@@ -38,15 +38,22 @@ DEBUG = os.getenv(
     "False"
 ).lower() == "true"
 
-ALLOWED_HOSTS = os.getenv(
-    "ALLOWED_HOSTS",
-    "127.0.0.1,localhost"
-).split(",")
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.getenv(
+        "ALLOWED_HOSTS",
+        "127.0.0.1,localhost"
+    ).split(",")
+    if host.strip()
+]
 
-CSRF_TRUSTED_ORIGINS = os.getenv(
-    "CSRF_TRUSTED_ORIGINS",
-    ""
-).split(",")
+csrf_origins = os.getenv("CSRF_TRUSTED_ORIGINS", "").strip()
+
+CSRF_TRUSTED_ORIGINS = (
+    [origin.strip() for origin in csrf_origins.split(",") if origin.strip()]
+    if csrf_origins
+    else []
+)
 
 # Application definition
 
