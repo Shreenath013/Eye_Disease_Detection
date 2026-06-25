@@ -69,7 +69,7 @@ try:
 
             MODEL_PATH,
 
-            map_location=device,
+            map_location="cpu",
 
             weights_only=True
 

@@ -86,7 +86,9 @@ def predict_image(image_path):
         else:
 
             outputs = model(input_tensor)
-
+        
+        del input_tensor
+        
         probs = F.softmax(outputs, dim=1).squeeze()
 
     # ==============================
@@ -157,6 +159,10 @@ def predict_image(image_path):
         "pathological_myopia": probs_list[2] * 100,
 
     }
+    
+    if device.type == "cpu":
+        import gc
+        gc.collect()
 
     return prediction, confidence, probabilities
 
