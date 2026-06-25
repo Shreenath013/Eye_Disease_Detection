@@ -39,8 +39,6 @@ from reportlab.platypus import (
 )
 
 from .ai_utils import generate_clinical_recommendation
-from .ml_model.efficientnet_gradcam import generate_gradcam
-from .ml_model.efficientnet_predict import predict_image
 from .models import FundusImage, MyopiaDiagnosis, Profile
 from xml.sax.saxutils import escape
 
@@ -414,6 +412,9 @@ def upload(request):
                 # =========================
                 # ML PIPELINE
                 # =========================
+                
+                from .ml_model.efficientnet_gradcam import generate_gradcam
+                from .ml_model.efficientnet_predict import predict_image
 
                 predicted_label, confidence, probabilities = (
                     predict_image(image_path)
