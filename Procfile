@@ -1,0 +1,1 @@
+web: gunicorn Eye_Disease.wsgi

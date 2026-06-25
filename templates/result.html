@@ -1,0 +1,627 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>Diagnosis Result — Myopia Detection System</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Poppins:wght@400;500;600;700&family=Raleway:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="{% static 'css/app.css' %}" rel="stylesheet">
+  <style>
+    .result-image-box { background: #0a1628; border-radius: 12px; overflow: hidden; position: relative; min-height: 260px; display: flex; align-items: center; justify-content: center; }
+    .result-image-box .retina-sim { width: 100%; height: 260px; background: radial-gradient(circle at 50% 50%, rgba(255,165,50,0.9) 0%, rgba(220,80,20,0.6) 20%, rgba(140,20,5,0.3) 50%, rgba(30,10,5,0.1) 70%, transparent 85%); position: relative; }
+    .result-image-box .img-label { position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.6); color: white; font-size: 11px; padding: 4px 10px; border-radius: 4px; }
+    .segmentation-box { background: #0a1628; border-radius: 12px; overflow: hidden; min-height: 260px; display: flex; align-items: center; justify-content: center; position: relative; }
+    .segmentation-box .seg-sim { width: 100%; height: 260px; position: relative; background: radial-gradient(circle at 50% 50%, rgba(255,165,50,0.2) 0%, rgba(220,80,20,0.1) 40%, transparent 70%); }
+    .seg-overlay { position: absolute; inset: 0; background: radial-gradient(ellipse at 60% 45%, rgba(255,80,80,0.5) 0%, transparent 30%), radial-gradient(ellipse at 30% 55%, rgba(255,200,50,0.4) 0%, transparent 20%), radial-gradient(ellipse at 70% 60%, rgba(255,100,50,0.35) 0%, transparent 25%); }
+    .segmentation-box .img-label { position: absolute; bottom: 10px; left: 10px; background: rgba(25,119,204,0.8); color: white; font-size: 11px; padding: 4px 10px; border-radius: 4px; }
+    .segmentation-legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
+    .seg-legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #666; }
+    .seg-legend-color { width: 14px; height: 14px; border-radius: 3px; }
+
+    /* Diagnosis Badge */
+    .diagnosis-result-badge { border-radius: 12px; padding: 24px; text-align: center; }
+    .diagnosis-result-badge.normal { background: color-mix(in srgb, #059652, transparent 88%); border: 2px solid #059652; }
+    .diagnosis-result-badge.warning { background: color-mix(in srgb, #ffc107, transparent 82%); border: 2px solid #ffc107; }
+    .diagnosis-result-badge.critical { background: color-mix(in srgb, #dc3545, transparent 88%); border: 2px solid #dc3545; }
+    .diagnosis-result-badge .badge-icon { font-size: 42px; margin-bottom: 8px; }
+    .diagnosis-result-badge.normal .badge-icon, .diagnosis-result-badge.normal .badge-title { color: #059652; }
+    .diagnosis-result-badge.warning .badge-icon, .diagnosis-result-badge.warning .badge-title { color: #856404; }
+    .diagnosis-result-badge.critical .badge-icon, .diagnosis-result-badge.critical .badge-title { color: #dc3545; }
+    .diagnosis-result-badge .badge-title { font-size: 20px; font-weight: 700; }
+    .diagnosis-result-badge .badge-sub { font-size: 14px; color: #555; margin-top: 4px; }
+
+
+    .class-prob-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .class-prob-bar .cla-label { font-size: 13px; color: #555; width: 130px; flex-shrink: 0; }
+    .class-prob-bar .cla-track { flex: 1; height: 8px; background: #e5eef7; border-radius: 4px; overflow: hidden; }
+    .class-prob-bar .cla-fill { height: 100%; border-radius: 4px; }
+    .class-prob-bar .cla-val { font-size: 12px; font-weight: 600; color: var(--heading-color); width: 40px; text-align: right; flex-shrink: 0; }
+
+    /* Clinical Recommendation */
+    .rec-step { display: flex; align-items: flex-start; gap: 14px; padding: 16px 0; border-bottom: 1px solid #f0f4f8; }
+    .rec-step:last-child { border-bottom: none; }
+    .rec-step .rec-icon { width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; background: color-mix(in srgb, var(--accent-color), transparent 88%); color: var(--accent-color); }
+    .rec-step .rec-title { font-size: 14px; font-weight: 600; color: var(--heading-color); margin-bottom: 3px; }
+    .rec-step .rec-desc { font-size: 13px; color: #666; margin: 0; line-height: 1.6; }
+
+    .status-badge {
+    display: inline-block;
+    padding: 8px 18px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    margin-top: 10px;
+    }
+
+    .status-badge.normal {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .status-badge.moderate {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+
+    .status-badge.warning {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .status-badge.danger {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .progress {
+    height: 10px;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #e5e7eb;
+    }
+  </style>
+</head>
+<body>
+
+  <header id="header" class="header">
+
+    <div class="topbar d-flex align-items-center">
+      <div class="container d-flex justify-content-center justify-content-md-between">
+
+        <div class="contact-info d-flex align-items-center">
+          <i class="bi bi-building d-flex align-items-center">
+            <span>AI-Powered Clinical Decision Support</span>
+          </i>
+        </div>
+
+        <div class="d-none d-md-flex align-items-center"
+            style="color:rgba(255,255,255,0.8); font-size:13px;">
+
+          Fundus Image Analysis Platform
+
+        </div>
+
+      </div>
+    </div>
+
+    <div class="branding d-flex align-items-center">
+
+      <div class="container d-flex align-items-center justify-content-between">
+
+        <a href="{% url 'home' %}"
+          class="d-flex align-items-center gap-2"
+          style="text-decoration:none;">
+
+          <i class="bi bi-eye-fill"
+            style="font-size:26px; color: var(--accent-color);"></i>
+
+          <div>
+
+            <div style="font-size:18px;
+                        font-weight:700;
+                        color:var(--heading-color);
+                        font-family:var(--heading-font);">
+
+              RetinaAI
+
+            </div>
+
+            <small style="font-size:11px; color:#888;">
+              Myopia Detection System
+            </small>
+
+          </div>
+
+        </a>
+
+        <nav id="navmenu" class="navmenu">
+
+          <ul>
+
+            {% if user_role == "doctor" %}
+
+              <li>
+                <a href="{% url 'doctor_dashboard' %}">
+                  Dashboard
+                </a>
+              </li>
+
+              <li>
+                <a href="{% url 'doctor_dashboard' %}#all-cases">
+                  Assigned Cases
+                </a>
+              </li>
+
+            {% else %}
+
+              <li>
+                <a href="{% url 'patient_dashboard' %}">
+                  Dashboard
+                </a>
+              </li>
+
+              <li>
+                <a href="{% url 'upload' %}">
+                  New Analysis
+                </a>
+              </li>
+
+              <li>
+                <a href="{% url 'patient_dashboard' %}#reports">
+                  My Reports
+                </a>
+              </li>
+
+            {% endif %}
+
+          </ul>
+
+          <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
+
+        </nav>
+
+        <div class="d-flex gap-2">
+
+          {% if user_role == "doctor" %}
+
+            <a href="{% url 'doctor_dashboard' %}"
+              class="btn-outline-custom btn-sm-custom">
+
+              <i class="bi bi-arrow-left"></i>
+              Dashboard
+
+            </a>
+
+          {% else %}
+
+            <a href="{% url 'upload' %}"
+              class="btn-outline-custom btn-sm-custom">
+
+              <i class="bi bi-arrow-left"></i>
+              New Analysis
+
+            </a>
+
+          {% endif %}
+
+          <a href="{% url 'logout' %}"
+            class="btn-outline-custom btn-sm-custom">
+
+            <i class="bi bi-box-arrow-right"></i>
+            Logout
+
+          </a>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </header>
+
+  <main>
+    <div class="page-title">
+      <div class="container d-flex align-items-center justify-content-between flex-wrap gap-3">
+        <div>
+          <h1>Analysis Result — Report #IMG-{{ diagnosis.id }}</h1>
+          <div class="breadcrumbs">
+            <a href="{% url 'home' %}">Home</a> /
+            {% if user_role == "patient" %}
+              <a href="{% url 'patient_dashboard' %}">Dashboard</a>
+            {% else %}
+              <a href="{% url 'doctor_dashboard' %}">Dashboard</a>
+            {% endif %}
+            / Analysis Result
+          </div>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn-outline-custom btn-sm-custom" onclick="window.print()"><i class="bi bi-printer"></i> Print Report</button>
+          <a href="{% url 'download_pdf' diagnosis.id %}"
+            class="btn-primary-custom btn-sm-custom">
+            <i class="bi bi-download"></i> Download PDF
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-content">
+      <div class="container">
+
+        {% if messages %}
+        <div class="mb-4">
+            {% for message in messages %}
+                <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags == 'debug' %}secondary{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show shadow-sm"
+                    role="alert">
+
+                    <i class="bi
+                        {% if message.tags == 'success' %}
+                            bi-check-circle-fill
+                        {% elif message.tags == 'warning' %}
+                            bi-exclamation-triangle-fill
+                        {% elif message.tags == 'error' %}
+                            bi-x-circle-fill
+                        {% else %}
+                            bi-info-circle-fill
+                        {% endif %}
+                        me-2"></i>
+
+                    {{ message }}
+
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="alert">
+                    </button>
+
+                </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Result Header Banner -->
+        <div class="warning-callout mb-4">
+          <p><i class="bi bi-cpu me-2"></i><strong>AI Analysis Completed</strong> — Analysis ID: {{ diagnosis.id }} |
+          Processed: {{ diagnosis.created_at|date:"d F Y, H:i" }} | Model: EfficientNet-B3 + GradCAM Explainability</p>
+        </div>
+
+        <div class="row g-4">
+
+          <!-- Left Column: Images -->
+          <div class="col-lg-5">
+
+            <!-- Original Image -->
+            <div class="content-card mb-4">
+              <div class="card-header-custom">
+                <h5><i class="bi bi-image me-2 text-primary"></i>Uploaded Fundus Image</h5>
+              </div>
+              <div class="card-body-custom">
+                <div class="result-image-box">
+                  <img src="{{ diagnosis.fundus_image.image.url }}"
+                      alt="Fundus image for {{ diagnosis.diagnosis }}"
+                      class="img-fluid"
+                      style="max-height:260px;">
+                  <div class="img-label">
+                    Fundus Scan —
+                    {{ diagnosis.created_at|date:"d M Y" }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- SEGMENTATION (If Exists) -->
+            {% if diagnosis.segmentation_mask %}
+            <div class="content-card">
+              <div class="card-header-custom">
+                <h5><i class="bi bi-diagram-3 me-2 text-primary"></i>AI Attention Heatmap</h5>
+              </div>
+              <div class="card-body-custom">
+                <div class="segmentation-box">
+                  <img src="{{ diagnosis.segmentation_mask.url }}"
+                      alt="GradCAM visualization for {{ diagnosis.diagnosis }}"
+                      class="img-fluid"
+                      style="max-height:260px;">
+                  <div class="img-label">GradCAM Heatmap</div>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- Right Column: Results -->
+          <div class="col-lg-7">
+
+            <!-- Diagnosis Badge -->
+            <div class="content-card mb-4">
+              <div class="card-header-custom">
+                <h5><i class="bi bi-clipboard2-pulse me-2 text-primary"></i>AI Diagnosis Result</h5>
+              </div>
+              <div class="card-body-custom">
+
+                <!-- Dynamic Diagnosis Badge -->
+                {% if diagnosis.diagnosis == "normal" %}
+                  <div class="diagnosis-result-badge normal">
+                    <div class="badge-icon"><i class="bi bi-check-circle"></i></div>
+                    <div class="badge-title">Normal</div>
+                    <div class="badge-sub">No Myopic Degeneration Detected</div>
+                  </div>
+                {% elif diagnosis.diagnosis == "myopia" %}
+                  <div class="diagnosis-result-badge warning">
+                    <div class="badge-icon"><i class="bi bi-eye"></i></div>
+                    <div class="badge-title">Myopia</div>
+                    <div class="badge-sub">Signs of Myopic Changes Detected</div>
+                  </div>
+                {% else %}
+                  <div class="diagnosis-result-badge critical">
+                    <div class="badge-icon"><i class="bi bi-exclamation-triangle"></i></div>
+                    <div class="badge-title">Pathological Myopia</div>
+                    <div class="badge-sub">High Myopic Degeneration Detected</div>
+                  </div>
+                {% endif %}
+
+                <!-- Confidence -->
+                <div class="text-center mt-4">
+                  <div style="font-size:13px; color:#888;">Model Confidence</div>
+                  <div style="font-size:28px; font-weight:700; color: var(--heading-color);">
+                    {{ diagnosis.confidence_score|floatformat:2 }}%
+                  </div>
+                </div>
+
+                <!-- Severity Level -->
+                <div class="text-center mt-4">
+
+                  <div style="font-size:13px; color:#888;">
+                    Severity Level
+                  </div>
+
+                  {% if diagnosis.severity_level == "None" %}
+
+                    <span class="status-badge normal">
+                      No Risk
+                    </span>
+
+                  {% elif diagnosis.severity_level == "Mild" %}
+
+                    <span class="status-badge moderate">
+                      Mild
+                    </span>
+
+                  {% elif diagnosis.severity_level == "Moderate" %}
+
+                    <span class="status-badge warning">
+                      Moderate
+                    </span>
+
+                  {% elif diagnosis.severity_level == "Severe" %}
+
+                    <span class="status-badge danger">
+                      Severe
+                    </span>
+
+                  {% else %}
+
+                    <span class="status-badge">
+                      {{ diagnosis.severity_level }}
+                    </span>
+
+                  {% endif %}
+
+                </div>
+
+                <!-- AI Probability Breakdown -->
+
+                <div class="mt-4">
+
+                  <div style="font-size:14px; font-weight:600; margin-bottom:15px;">
+                    AI Confidence Breakdown
+                  </div>
+
+                  <!-- Myopia -->
+
+                  <div class="mb-3">
+
+                    <div class="d-flex justify-content-between">
+                      <span>Myopia</span>
+                      <span>{{ diagnosis.myopia_probability|floatformat:2 }}%</span>
+                    </div>
+
+                    <div class="progress">
+                      <div class="progress-bar bg-warning"
+                          style="width: {{ diagnosis.myopia_probability|floatformat:2 }}%">
+                      </div>
+                    </div>
+
+                  </div>
+
+                  <!-- Normal -->
+
+                  <div class="mb-3">
+
+                    <div class="d-flex justify-content-between">
+                      <span>Normal</span>
+                      <span>{{ diagnosis.normal_probability|floatformat:2 }}%</span>
+                    </div>
+
+                    <div class="progress">
+                      <div class="progress-bar bg-success"
+                          style="width: {{ diagnosis.normal_probability|floatformat:2 }}%">
+                      </div>
+                    </div>
+
+                  </div>
+
+                  <!-- Pathological -->
+
+                  <div class="mb-2">
+
+                    <div class="d-flex justify-content-between">
+                      <span>Pathological Myopia</span>
+                      <span>{{ diagnosis.pathological_probability|floatformat:2 }}%</span>
+                    </div>
+
+                    <div class="progress">
+                      <div class="progress-bar bg-danger"
+                          style="width: {{ diagnosis.pathological_probability|floatformat:2 }}%">
+                      </div>
+                    </div>
+
+                  </div>
+
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Recommendation -->
+            <div class="content-card">
+              <div class="card-header-custom">
+                <h5><i class="bi bi-file-medical me-2 text-primary"></i>Clinical Recommendation</h5>
+              </div>
+              <div class="card-body-custom">
+
+                <div class="warning-callout mb-3">
+                  <p>
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <strong>Recommendation:</strong>
+                    {{ diagnosis.recommendation }}
+                  </p>
+                </div>
+
+                {% if diagnosis.doctor_comment %}
+                <div class="info-callout mt-3">
+                  <p>
+                    <i class="bi bi-person-workspace me-2"></i>
+                    <strong>Doctor Comment:</strong>
+                    {{ diagnosis.doctor_comment }}
+                  </p>
+                </div>
+                {% endif %}
+
+                <div class="danger-callout mt-3">
+                  <p>
+                    <i class="bi bi-shield-exclamation me-2"></i>
+                    <strong>Disclaimer:</strong>
+                    This report is generated by an AI model and constitutes decision support only.
+                  </p>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Footer Metadata -->
+        <div class="row mt-4">
+          <div class="col-12">
+            <div class="content-card">
+              <div class="card-body-custom">
+                <div class="row g-3" style="font-size: 13px; color: #888;">
+                  <div class="col-md-3">
+                    <strong style="color:var(--heading-color);">Report ID:</strong><br>
+                    {{ diagnosis.id }}
+                  </div>
+
+                  <div class="col-md-3">
+                    <strong style="color:var(--heading-color);">Analysis Date:</strong><br>
+                    {{ diagnosis.created_at|date:"d F Y, H:i" }}
+                  </div>
+
+                  <div class="col-md-3">
+                    <strong style="color:var(--heading-color);">Review Status:</strong><br>
+                    {% if diagnosis.is_reviewed %}
+                        Reviewed by {{ reviewed_by_name }}
+                    {% else %}
+                        Pending Doctor Review
+                    {% endif %}
+                  </div>
+
+                  <div class="col-md-3">
+                    <strong style="color:var(--heading-color);">Models Used:</strong><br>
+                    EfficientNet-B3 + GradCAM Explainability
+                  </div>
+
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {% if user_role == "doctor" %}
+        <div class="content-card mt-4">
+          <div class="card-header-custom">
+            <h5><i class="bi bi-chat-left-text me-2 text-primary"></i>Doctor Comment</h5>
+          </div>
+          <div class="card-body-custom">
+
+            <form method="POST">
+              {% csrf_token %}
+
+              <textarea name="doctor_comment"
+                        class="form-control-custom"
+                        rows="4"
+                        placeholder="Enter your clinical notes here...">{{ diagnosis.doctor_comment|default:"" }}</textarea>
+
+              <button type="submit"
+                      class="btn-primary-custom mt-3">
+                Save Comment
+              </button>
+            </form>
+
+          </div>
+        </div>
+        {% endif %}
+
+        <div class="d-flex gap-3 justify-content-center mt-3">
+          {% if user_role == "patient" %}
+          <a href="{% url 'upload' %}"
+            class="btn-primary-custom">
+              <i class="bi bi-cloud-upload"></i>
+              Analyze Another Image
+          </a>
+          <a href="{% url 'patient_dashboard' %}"
+            class="btn-outline-custom">
+              <i class="bi bi-arrow-left"></i>
+              Back to Dashboard
+          </a>
+          {% else %}
+          <a href="{% url 'doctor_dashboard' %}"
+            class="btn-outline-custom">
+              <i class="bi bi-arrow-left"></i>
+              Back to Dashboard
+          </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container copyright text-center mt-4">
+      <p>
+        <strong class="px-1">
+          AI-Based Myopia Detection System
+        </strong>
+      </p>
+      <p style="font-size: 13px; color: #888;">
+        © All rights reserved
+      </p>
+    </div>
+  </footer>
+
+  <a href="#" id="scroll-top" class="scroll-top"><i class="bi bi-arrow-up-short"></i></a>
+  <div id="preloader"></div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    window.addEventListener('load', () => { const p = document.getElementById('preloader'); if(p) { p.style.opacity = '0'; setTimeout(() => p.remove(), 500); } });
+    const st = document.querySelector('.scroll-top');
+    document.addEventListener('scroll', () => { window.scrollY > 100 ? st.classList.add('active') : st.classList.remove('active'); });
+    st?.addEventListener('click', e => { e.preventDefault(); window.scrollTo({top:0, behavior:'smooth'}); });
+    const mt = document.querySelector('.mobile-nav-toggle');
+    if (mt) mt.addEventListener('click', () => { document.body.classList.toggle('mobile-nav-active'); mt.classList.toggle('bi-list'); mt.classList.toggle('bi-x'); });
+  </script>
+</body>
+</html>

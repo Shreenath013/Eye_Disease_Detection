@@ -1,0 +1,38 @@
+```gitignore
+# Virtual Environment
+venv/
+env/
+
+# Python Cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment Variables
+.env
+
+# Database
+db.sqlite3
+
+# Uploaded Files
+media/
+
+# Collected Static Files
+staticfiles/
+
+# VS Code
+.vscode/
+
+# IDE
+.idea/
+
+# Logs
+*.log
+
+# Windows
+Thumbs.db
+
+# Mac
+.DS_Store
+```

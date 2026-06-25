@@ -1,0 +1,348 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>Patient Dashboard — Myopia Detection System</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Poppins:wght@400;500;600;700&family=Raleway:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="{% static 'css/app.css' %}" rel="stylesheet">
+
+  <style>
+    #history-table {
+      scroll-margin-top: 120px;
+    }
+  </style>
+
+</head>
+<body>
+
+  <!-- Header -->
+  <header id="header" class="header">
+    <div class="topbar d-flex align-items-center">
+      <div class="container d-flex justify-content-center justify-content-md-between">
+        <div class="contact-info d-flex align-items-center">
+          <i class="bi bi-building d-flex align-items-center"><span>AI-Powered Clinical Decision Support</span></i>
+        </div>
+        <div class="d-none d-md-flex align-items-center" style="color:rgba(255,255,255,0.8); font-size:13px;">
+          Fundus Image Analysis Platform
+        </div>
+      </div>
+    </div>
+    <div class="branding d-flex align-items-center">
+      <div class="container d-flex align-items-center justify-content-between">
+        <a href="{% url 'home' %}" class="d-flex align-items-center gap-2" style="text-decoration:none;">
+          <i class="bi bi-eye-fill" style="font-size:26px; color: var(--accent-color);"></i>
+          <div>
+            <div style="font-size:18px; font-weight:700; color:var(--heading-color); font-family:var(--heading-font);">RetinaAI</div>
+            <small style="font-size:11px; color:#888;">Myopia Detection System</small>
+          </div>
+        </a>
+        <nav id="navmenu" class="navmenu">
+          <ul>
+            <li><a href="{% url 'patient_dashboard' %}" >Dashboard</a></li>
+            <li><a href="{% url 'upload' %}">New Analysis</a></li>
+            <li>
+              <a href="#history-table">
+                  My Reports
+              </a>
+            </li>
+          </ul>
+          <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
+        </nav>
+        <div class="d-flex align-items-center gap-3">
+          <div class="user-info-badge d-none d-md-flex">
+            <div class="avatar">
+              {{ request.user.profile.full_name|first }}
+            </div>
+            <div>
+              <div style="font-size:13px; font-weight:600;">
+                {{ request.user.profile.full_name }}
+              </div>
+              <div class="role-badge">
+                {{ request.user.profile.role|title }}
+              </div>
+            </div>
+          </div>
+          <a href="{% url 'logout' %}" class="btn-outline-custom btn-sm-custom"><i class="bi bi-box-arrow-right"></i> Logout</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Page Title -->
+    <div class="page-title">
+      <div class="container d-flex align-items-center justify-content-between flex-wrap gap-3">
+        <div>
+          <h1>Patient Dashboard</h1>
+          <div class="breadcrumbs"><a href="{% url 'home' %}">Home</a> / Patient Dashboard</div>
+        </div>
+        <a href="{% url 'upload' %}" class="btn-primary-custom">
+          <i class="bi bi-cloud-upload"></i> Upload New Retinal Image
+        </a>
+      </div>
+    </div>
+
+    <div class="app-content">
+      <div class="container">
+
+        <!-- Stats Row -->
+        <div class="row g-4 mb-4">
+          <div class="col-lg-3 col-md-6">
+            <div class="stat-card">
+              <div class="card-icon blue"><i class="bi bi-file-medical"></i></div>
+              <div class="card-value">{{ total_reports }}</div>
+              <div class="card-label">Total Reports</div>
+            </div>
+          </div>
+          <div class="col-lg-3 col-md-6">
+            <div class="stat-card">
+              <div class="card-icon green"><i class="bi bi-check-circle"></i></div>
+              <div class="card-value">{{ completed }}</div>
+              <div class="card-label">Completed Analyses</div>
+            </div>
+          </div>
+          <div class="col-lg-3 col-md-6">
+            <div class="stat-card">
+              <div class="card-icon orange"><i class="bi bi-hourglass-split"></i></div>
+              <div class="card-value">{{ pending }}</div>
+              <div class="card-label">Pending Review</div>
+            </div>
+          </div>
+          <div class="col-lg-3 col-md-6">
+            <div class="stat-card">
+              <div class="card-icon red"><i class="bi bi-exclamation-triangle"></i></div>
+              <div class="card-value">{{ flagged }}</div>
+              <div class="card-label">Flagged for Follow-up</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row g-4">
+          <!-- Latest Diagnosis -->
+          <div class="col-lg-5">
+            <div class="content-card h-100">
+              <div class="card-header-custom">
+                <h5><i class="bi bi-clipboard2-pulse me-2 text-primary"></i>Latest Diagnosis</h5>
+                <span style="font-size:12px; color:#888;">Most recent result</span>
+              </div>
+
+              <div class="card-body-custom">
+
+                {% if latest %}
+                <div class="text-center mb-3">
+                  <div style="width:80px; height:80px; background:#0a1628; border-radius:50%; margin:0 auto 12px; display:flex; align-items:center; justify-content:center;">
+                    <i class="bi bi-eye" style="font-size:36px; color: #f97316;"></i>
+                  </div>
+
+                  <div style="font-size:13px; color:#888; margin-bottom:8px;">
+                    Analysis Date: {{ latest.created_at|date:"d M Y" }}
+                  </div>
+
+                  {% if latest.diagnosis == "normal" %}
+
+                  <div class="badge-normal"
+                      style="font-size:14px;
+                              padding:8px 20px;
+                              border-radius:20px;">
+
+                      {{ latest.get_diagnosis_display }}
+
+                  </div>
+
+                  {% elif latest.diagnosis == "myopia" %}
+
+                  <div class="badge-myopia"
+                      style="font-size:14px;
+                              padding:8px 20px;
+                              border-radius:20px;">
+
+                      {{ latest.get_diagnosis_display }}
+
+                  </div>
+
+                  {% else %}
+
+                  <div class="badge-glaucoma"
+                      style="font-size:14px;
+                              padding:8px 20px;
+                              border-radius:20px;">
+
+                      {{ latest.get_diagnosis_display }}
+
+                  </div>
+
+                  {% endif %}
+                </div>
+
+                <hr style="border-color:#e5eef7;">
+
+                <div class="row g-2 text-center mb-3">
+                  <div>
+                    <div style="font-size:12px; color:#888;">Confidence Score</div>
+                    <div style="font-size:22px; font-weight:700; color: var(--heading-color);">
+                      {{ latest.confidence_score|floatformat:2 }}%
+                    </div>
+                  </div>
+                </div>
+
+                <div class="warning-callout mb-3">
+                  <p>
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <strong>Recommendation:</strong>
+                    {{ latest.recommendation }}
+                  </p>
+                </div>
+
+                <a href="{% url 'result' latest.id %}"
+                  class="btn-primary-custom"
+                  style="width:100%; justify-content:center;">
+                  <i class="bi bi-eye"></i> View Full Report
+                </a>
+
+                {% else %}
+                  <p class="text-center">No reports available yet.</p>
+                {% endif %}
+
+              </div>
+            </div>
+          </div>
+
+          <!-- History Table -->
+          <div class="col-lg-7">
+            <div class="content-card h-100" id="history-table">
+              <div class="card-header-custom">
+                  <h5>
+                      <i class="bi bi-clock-history me-2 text-primary"></i>
+                      Diagnosis History
+                  </h5>
+                  <span style="font-size:13px; color:#888;">
+                      Recent Reports
+                  </span>
+              </div>
+              <div class="card-body-custom p-0">
+                <div style="overflow-x:auto;">
+                  <table class="table-custom w-100">
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Image ID</th>
+                        <th>Diagnosis</th>
+                        <th>Confidence</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                    {% for d in diagnoses %}
+                    <tr>
+                      <td>{{ d.created_at|date:"d M Y" }}</td>
+                      <td><code style="font-size:12px;">IMG-{{ d.id }}</code></td>
+                      <td>
+                        {% if d.diagnosis == "normal" %}
+                          <span class="badge-normal">Normal</span>
+                        {% elif d.diagnosis == "myopia" %}
+                          <span class="badge-myopia">Myopia</span>
+                        {% else %}
+                          <span class="badge-glaucoma">Pathological Myopia</span>
+                        {% endif %}
+                      </td>
+                      <td>{{ d.confidence_score|floatformat:2 }}%</td>
+                      <td>
+                        {% if d.is_reviewed %}
+                          <span class="badge-normal"
+                                style="background:color-mix(in srgb,#059652,transparent 85%);color:#059652;">
+                            Reviewed
+                          </span>
+                        {% else %}
+                          <span class="badge-warning"
+                                style="background:color-mix(in srgb,#ffc107,transparent 80%);color:#856404;">
+                            Pending
+                          </span>
+                        {% endif %}
+                      </td>
+                      <td>
+                        <a href="{% url 'result' d.id %}"
+                          class="btn-outline-custom btn-sm-custom">
+                          <i class="bi bi-eye"></i> View
+                        </a>
+                      </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                      <td colspan="6" class="text-center py-3">
+                        No reports available.
+                      </td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                  </table>
+                  <div class="d-flex justify-content-center mt-4">
+                    <div class="pagination-wrapper">
+                      {% if diagnoses.has_previous %}
+                        <a href="?page={{ diagnoses.previous_page_number }}"
+                          class="btn-outline-custom btn-sm-custom">
+                          Previous
+                        </a>
+                      {% endif %}
+                      <span style="margin:0 12px; font-size:14px;">
+                        Page {{ diagnoses.number }}
+                        of {{ diagnoses.paginator.num_pages }}
+                      </span>
+                      {% if diagnoses.has_next %}
+                        <a href="?page={{ diagnoses.next_page_number }}"
+                          class="btn-outline-custom btn-sm-custom">
+                          Next
+                        </a>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Info Callout -->
+        <div class="row mt-4">
+          <div class="col-12">
+            <div class="info-callout">
+              <p><i class="bi bi-shield-exclamation me-2"></i><strong>Important Notice:</strong> AI-generated myopia classifications are decision support tools only. All results must be clinically validated by a licensed ophthalmologist before any medical decision is made.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container copyright text-center mt-4">
+      <p>
+        <strong class="px-1">
+          AI-Based Myopia Detection System
+        </strong>
+      </p>
+      <p style="font-size: 13px; color: #888;">
+        © All rights reserved
+      </p>
+    </div>
+  </footer>
+
+  <a href="#" id="scroll-top" class="scroll-top"><i class="bi bi-arrow-up-short"></i></a>
+  <div id="preloader"></div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    window.addEventListener('load', () => { const p = document.getElementById('preloader'); if(p) { p.style.opacity = '0'; setTimeout(() => p.remove(), 500); } });
+    const st = document.querySelector('.scroll-top');
+    document.addEventListener('scroll', () => { window.scrollY > 100 ? st.classList.add('active') : st.classList.remove('active'); });
+    st.addEventListener('click', e => { e.preventDefault(); window.scrollTo({top:0, behavior:'smooth'}); });
+    const mt = document.querySelector('.mobile-nav-toggle');
+    if (mt) mt.addEventListener('click', () => { document.body.classList.toggle('mobile-nav-active'); mt.classList.toggle('bi-list'); mt.classList.toggle('bi-x'); });
+  </script>
+</body>
+</html>

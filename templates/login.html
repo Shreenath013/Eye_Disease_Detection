@@ -1,0 +1,136 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>Login — Retinal Disease Detection System</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Poppins:wght@400;500;600;700&family=Raleway:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="{% static 'css/app.css' %}" rel="stylesheet">
+  <style>
+    body { background: linear-gradient(135deg, #e8f4fd 0%, #ddeefa 100%); display: flex; flex-direction: column; min-height: 100vh; }
+    .login-wrapper { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px 20px; }
+    .login-card { background: #fff; border-radius: 16px; box-shadow: 0 20px 60px rgba(25,119,204,0.12); overflow: hidden; width: 100%; max-width: 460px; }
+    .login-header { background: var(--accent-color); padding: 32px; text-align: center; }
+    .login-header .logo-icon { width: 60px; height: 60px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 28px; color: white; }
+    .login-header h2 { color: white; font-size: 22px; font-weight: 700; margin: 0 0 6px; }
+    .login-header p { color: rgba(255,255,255,0.85); font-size: 13px; margin: 0; }
+    .login-body { padding: 36px; }
+    .form-floating-custom { position: relative; margin-bottom: 18px; }
+    .form-floating-custom input { border: 1.5px solid #d0dcea; border-radius: 8px; padding: 14px 14px 14px 44px; font-size: 14px; width: 100%; transition: 0.3s; background: #fff; color: var(--default-color); }
+    .form-floating-custom input:focus { outline: none; border-color: var(--accent-color); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-color), transparent 85%); }
+    .form-floating-custom .field-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #aab; font-size: 18px; pointer-events: none; }
+    .form-floating-custom label { display: block; font-size: 13px; font-weight: 600; color: var(--heading-color); margin-bottom: 6px; }
+    .login-btn { width: 100%; background: var(--accent-color); color: white; border: none; border-radius: 50px; padding: 12px; font-size: 15px; font-weight: 600; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 8px; }
+    .login-btn:hover { background: color-mix(in srgb, var(--accent-color), transparent 15%); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(25,119,204,0.3); }
+    .divider { text-align: center; margin: 18px 0; position: relative; }
+    .divider::before { content: ''; position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: #e5eef7; }
+    .divider span { background: white; position: relative; padding: 0 12px; font-size: 13px; color: #aab; }
+    .footer-links-login { text-align: center; font-size: 13px; color: #888; padding: 16px 36px 24px; border-top: 1px solid #f0f4f8; }
+    .footer-links-login a { color: var(--accent-color); font-weight: 600; }
+    .role-info { background: #f1f7fc; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; }
+    .role-info p { margin: 0; font-size: 12px; color: #666; }
+    .role-info strong { color: var(--heading-color); }
+    .forgot-link { font-size: 13px; color: var(--accent-color); }
+    /* Simple page header */
+    .simple-header { background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.06); padding: 14px 0; }
+    .simple-header .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .simple-header .brand h1 { font-size: 20px; margin: 0; font-weight: 700; color: var(--heading-color); }
+    .simple-header .brand small { font-size: 11px; color: #888; display: block; }
+    .simple-footer { text-align: center; padding: 16px; font-size: 12px; color: #aab; }
+  </style>
+</head>
+<body>
+
+  <div class="simple-header">
+    <div class="container d-flex align-items-center justify-content-between">
+      <a href="{% url 'home' %}" class="brand">
+        <i class="bi bi-eye-fill" style="font-size:26px; color: var(--accent-color);"></i>
+        <div>
+          <h1>RetinaAI</h1>
+          <small>Myopia Detection System</small>
+        </div>
+      </a>
+      <a href="{% url 'home' %}" class="btn-outline-custom btn-sm-custom"><i class="bi bi-arrow-left"></i> Back to Home</a>
+    </div>
+  </div>
+
+  <div class="login-wrapper">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="logo-icon"><i class="bi bi-shield-lock"></i></div>
+        <h2>Secure System Login</h2>
+        <p>AI-Based Myopia Detection System</p>
+      </div>
+
+      <div class="login-body">
+        <div class="role-info">
+          <p><strong>Access Roles:</strong> This system is accessible to <strong>registered Doctors</strong> and <strong>Patients</strong> only. Contact your system administrator for access.</p>
+        </div>
+
+        {% if messages %}
+          {% for message in messages %}
+            <div class="alert
+            {% if message.tags == 'error' %}
+            alert-danger
+            {% else %}
+            alert-{{ message.tags }}
+            {% endif %}">
+                {{ message }}
+            </div>
+          {% endfor %}
+        {% endif %}
+
+        <form method="POST">
+          {% csrf_token %}
+          <div class="form-floating-custom">
+            <label for="username">Username</label>
+            <div style="position:relative;">
+              <i class="bi bi-person field-icon"></i>
+              <input type="text" id="username" name="username" placeholder="Enter your username" required autocomplete="username">
+            </div>
+          </div>
+
+          <div class="form-floating-custom">
+            <label for="password">Password</label>
+            <div style="position:relative;">
+              <i class="bi bi-lock field-icon"></i>
+              <input type="password" id="password" name="password" placeholder="Enter your password" required autocomplete="current-password">
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center mb-3" style="font-size: 13px;">
+            <label style="display:flex; align-items:center; gap:6px; cursor:pointer; color: #555; font-weight: 400;">
+              <input type="checkbox" style="accent-color: var(--accent-color);" name="remember"> Remember me
+            </label>
+            <a href="#" class="forgot-link">Forgot password?</a>
+          </div>
+
+          <button type="submit" class="login-btn">
+            <i class="bi bi-box-arrow-in-right"></i> Login to System
+          </button>
+        </form>
+
+        <div class="divider"><span>New to the system?</span></div>
+        <a href="{% url 'register' %}" class="btn-outline-custom" style="width:100%; justify-content:center;">
+          <i class="bi bi-person-plus"></i> Register New Account
+        </a>
+      </div>
+
+      <div class="footer-links-login">
+        <p class="mb-0">AI-Based Myopia Detection System<br>
+        <a href="{% url 'home' %}">Back to Home Page</a></p>
+      </div>
+    </div>
+  </div>
+
+  <div id="preloader"></div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    window.addEventListener('load', () => { const p = document.getElementById('preloader'); if(p) { p.style.opacity = '0'; setTimeout(() => p.remove(), 500); } });
+  </script>
+</body>
+</html>

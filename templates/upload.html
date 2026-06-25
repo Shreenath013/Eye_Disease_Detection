@@ -1,0 +1,520 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>Upload Fundus Image - Myopia Analysis</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Poppins:wght@400;500;600;700&family=Raleway:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="{% static 'css/app.css' %}" rel="stylesheet">
+  <style>
+    .upload-zone { border: 2px dashed #a0bcd8; border-radius: 12px; background: #f8fbfe; padding: 50px 30px; text-align: center; cursor: pointer; transition: 0.3s; position: relative; min-height: 240px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .upload-zone:hover, .upload-zone.dragover { border-color: var(--accent-color); background: color-mix(in srgb, var(--accent-color), transparent 96%); }
+    .upload-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+    .upload-zone .upload-icon { font-size: 56px; color: #c0d4ea; margin-bottom: 16px; transition: 0.3s; }
+    .upload-zone:hover .upload-icon, .upload-zone.dragover .upload-icon { color: var(--accent-color); }
+    .upload-zone h4 { font-size: 18px; font-weight: 600; color: var(--heading-color); margin-bottom: 8px; }
+    .upload-zone p { font-size: 14px; color: #888; margin: 0; }
+    .upload-zone .browse-link { color: var(--accent-color); font-weight: 600; text-decoration: underline; }
+    .upload-zone .file-types { margin-top: 12px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+    .upload-zone .file-type-tag { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 10px; background: #e5eef7; color: #5580a0; }
+
+    .preview-box { border: 1.5px solid #d0dcea; border-radius: 12px; background: #fff; padding: 20px; text-align: center; min-height: 240px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .preview-box.has-image { background: #0a1628; }
+    .preview-box .preview-placeholder { color: #ccc; }
+    .preview-box .preview-placeholder i { font-size: 48px; display: block; margin-bottom: 12px; }
+    .preview-box .preview-placeholder p { margin: 0; font-size: 14px; }
+    .preview-image { width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px; display: none; }
+    .preview-label { font-size: 11px; color: #888; margin-top: 8px; }
+
+    .req-checklist { list-style: none; padding: 0; margin: 0; }
+    .req-checklist li { font-size: 13px; color: #666; padding: 5px 0; display: flex; align-items: center; gap: 8px; }
+    .req-checklist li i { color: var(--accent-color); font-size: 15px; }
+
+    .analyze-btn { background: var(--accent-color); color: white; border: none; border-radius: 50px; padding: 14px 50px; font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.3s; display: inline-flex; align-items: center; gap: 10px; }
+    .analyze-btn:hover { background: color-mix(in srgb, var(--accent-color), transparent 15%); transform: translateY(-2px); box-shadow: 0 8px 25px rgba(25,119,204,0.3); }
+
+    .progress-area { display: none; }
+    .analysis-progress { height: 8px; background: #e5eef7; border-radius: 4px; overflow: hidden; margin-top: 10px; }
+    .analysis-progress .progress-fill { height: 100%; background: var(--accent-color); border-radius: 4px; width: 0; transition: width 0.5s; }
+    .progress-step { display: flex; align-items: center; gap: 10px; font-size: 14px; color: #555; padding: 6px 0; }
+    .progress-step .step-status { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; }
+    .progress-step .step-status.done { background: #059652; color: white; }
+    .progress-step .step-status.active { background: var(--accent-color); color: white; animation: pulse 1s infinite; }
+    .progress-step .step-status.pending { background: #e5eef7; color: #aab; }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+    .processing-overlay {
+
+        position: fixed;
+        inset: 0;
+
+        background: rgba(0,0,0,0.75);
+
+        display: none;
+
+        justify-content: center;
+        align-items: center;
+
+        z-index: 9999;
+    }
+
+    .processing-box {
+
+        background: white;
+
+        padding: 40px;
+
+        border-radius: 20px;
+
+        width: 420px;
+
+        text-align: center;
+
+        box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    }
+
+    .processing-box h4 {
+
+        font-weight: 700;
+    }
+
+    .processing-box p {
+
+        color: #666;
+        font-size: 15px;
+    }
+
+    .analyze-btn:disabled {
+
+        background: #aab;
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+
+    }
+  </style>
+</head>
+<body>
+
+  <header id="header" class="header">
+    <div class="topbar d-flex align-items-center">
+      <div class="container d-flex justify-content-center justify-content-md-between">
+        <div class="contact-info d-flex align-items-center">
+          <i class="bi bi-building d-flex align-items-center"><span>AI-Powered Clinical Decision Support</span></i>
+        </div>
+        <div class="d-none d-md-flex align-items-center" style="color:rgba(255,255,255,0.8); font-size:13px;">Fundus Image Analysis Platform</div>
+      </div>
+    </div>
+    <div class="branding d-flex align-items-center">
+      <div class="container d-flex align-items-center justify-content-between">
+        <a href="{% url 'home' %}" class="d-flex align-items-center gap-2" style="text-decoration:none;">
+          <i class="bi bi-eye-fill" style="font-size:26px; color: var(--accent-color);"></i>
+          <div>
+            <div style="font-size:18px; font-weight:700; color:var(--heading-color); font-family:var(--heading-font);">RetinaAI</div>
+            <small style="font-size:11px; color:#888;">Myopia Detection System</small>
+          </div>
+        </a>
+        <nav id="navmenu" class="navmenu">
+          <ul>
+            <li><a href="{% url 'patient_dashboard' %}">Dashboard</a></li>
+            <li><a href="{% url 'upload' %}" >New Analysis</a></li>
+            <li><a href="{% url 'patient_dashboard' %}">My Reports</a></li>
+          </ul>
+          <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
+        </nav>
+        <a href="{% url 'logout' %}" class="btn-outline-custom btn-sm-custom"><i class="bi bi-box-arrow-right"></i> Logout</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="page-title">
+      <div class="container">
+        <h1>Upload Fundus Image for Myopia Analysis</h1>
+        <div class="breadcrumbs"><a href="{% url 'home' %}">Home</a> / <a href="{% url 'patient_dashboard' %}">Dashboard</a> / New Analysis
+        </div>
+      </div>
+    </div>
+
+    <div class="app-content">
+      <div class="container">
+        <div class="row g-4">
+
+          <!-- Upload & Preview Column -->
+          <div class="col-lg-8">
+            <div class="content-card">
+              <div class="card-header-custom">
+                <h5><i class="bi bi-cloud-upload me-2 text-primary"></i>Upload Fundus Image</h5>
+              </div>
+              <div class="card-body-custom">
+
+                <!-- Upload Zone -->
+                <form method="POST"
+                  enctype="multipart/form-data"
+                  onsubmit="startProcessing()">
+                  {% csrf_token %}
+
+                  <div class="upload-zone" id="uploadZone">
+
+                    <!-- ✅ name="image" ADDED -->
+                    <input type="file"
+                          name="image"
+                          id="imageInput"
+                          accept="image/jpeg,image/png,image/tiff"
+                          onchange="handleFileSelect(event)"
+                          required>
+
+                    <i class="bi bi-cloud-arrow-up upload-icon"></i>
+                    <h4>Drag & Drop Fundus Image Here</h4>
+                    <p>or <span class="browse-link">click to browse files</span></p>
+
+                    <div class="file-types">
+                      <span class="file-type-tag">JPEG</span>
+                      <span class="file-type-tag">PNG</span>
+                      <span class="file-type-tag">TIFF</span>
+                      <span class="file-type-tag">Max 10MB</span>
+                    </div>
+                  </div>
+
+                  <!-- Preview Section (UNCHANGED) -->
+                  <div class="row g-3 mt-3">
+                    <div class="col-md-6">
+                      <div class="preview-box" id="previewBox">
+                        <div class="preview-placeholder" id="previewPlaceholder">
+                          <i class="bi bi-eye-slash"></i>
+                          <p>Image preview will<br>appear here</p>
+                        </div>
+                        <img id="previewImg"
+                            class="preview-image"
+                            alt="Selected image preview">
+                      </div>
+                      <div class="preview-label text-center" id="previewLabel">No image selected</div>
+                    </div>
+
+                    <div class="col-md-6">
+                      <div style="padding: 16px 0;">
+
+                        <div id="fileInfo" class="mb-3" style="display:none;">
+                          <div class="success-callout mb-2">
+                            <p>
+                              <i class="bi bi-check-circle me-2"></i>
+                              <strong id="fileName">—</strong><br>
+                              <span id="fileSize" style="font-size:12px;">—</span>
+                            </p>
+                          </div>
+                        </div>
+
+                        <div class="form-group-custom">
+                          <label class="form-label-custom">Clinical Notes (Optional)</label>
+
+                          <!-- ✅ name="clinical_notes" ADDED -->
+                          <textarea name="clinical_notes"
+                                    class="form-control-custom"
+                                    rows="3"
+                                    placeholder="e.g., blurred vision, known high myopia..."
+                                    style="resize:vertical;"></textarea>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <hr style="border-color:#e5eef7;">
+
+                  <!-- Analyze Button -->
+                  <div class="text-center mt-3">
+
+                    <!-- ✅ CHANGED TO type="submit" -->
+                    <button type="submit"
+                            class="analyze-btn"
+                            id="analyzeBtn"
+                            disabled>
+                      <i class="bi bi-cpu"></i> Analyze Image
+                    </button>
+
+                    <p style="font-size:12px; color:#aab; margin-top:10px;">
+                      Analysis typically takes 10–30 seconds depending on image size and model load.
+                    </p>
+                  </div>
+
+                </form>
+
+              </div>
+            </div>
+          </div>
+
+          <!-- Requirements & Info Column -->
+          <div class="col-lg-4">
+            <div class="content-card mb-4">
+              <div class="card-header-custom">
+                <h5><i class="bi bi-checklist me-2 text-primary"></i>Image Requirements</h5>
+              </div>
+              <div class="card-body-custom">
+                <ul class="req-checklist">
+                  <li><i class="bi bi-check-circle-fill"></i> Standard fundus photograph</li>
+                  <li><i class="bi bi-check-circle-fill"></i> Minimum 512×512 pixels resolution</li>
+                  <li><i class="bi bi-check-circle-fill"></i> JPEG, PNG, or TIFF format</li>
+                  <li><i class="bi bi-check-circle-fill"></i> Maximum file size: 10 MB</li>
+                  <li><i class="bi bi-check-circle-fill"></i> Centered optic disc, clear focus</li>
+                  <li><i class="bi bi-check-circle-fill"></i> No excessive glare or artifacts</li>
+                  <li><i class="bi bi-check-circle-fill"></i> Adequate illumination and contrast</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="content-card mb-4">
+              <div class="card-header-custom">
+                <h5><i class="bi bi-cpu me-2 text-primary"></i>AI Analysis Pipeline</h5>
+              </div>
+              <div class="card-body-custom">
+                <div style="font-size:13px; color:#555; line-height:1.8;">
+                  <div class="d-flex align-items-center gap-2 mb-2"><span style="background:var(--accent-color);color:white;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">1</span> Image preprocessing (resize & normalization)</div>
+                  <div class="d-flex align-items-center gap-2 mb-2"><span style="background:var(--accent-color);color:white;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">2</span> Deep CNN feature extraction</div>
+                  <div class="d-flex align-items-center gap-2 mb-2"><span style="background:var(--accent-color);color:white;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">3</span> Myopia classification</div>
+                  <div class="d-flex align-items-center gap-2 mb-2"><span style="background:var(--accent-color);color:white;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">4</span> Confidence score generation</div>
+                  <div class="d-flex align-items-center gap-2"><span style="background:var(--accent-color);color:white;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">5</span> Clinical recommendation generation</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="warning-callout">
+              <p><i class="bi bi-exclamation-triangle me-2"></i><strong>Privacy Notice:</strong> Uploaded images are processed solely for diagnostic analysis. Patient data is handled per institutional data protection policy.</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container copyright text-center mt-4">
+      <p>
+        <strong class="px-1">
+          AI-Based Myopia Detection System
+        </strong>
+      </p>
+      <p style="font-size: 13px; color: #888;">
+        © All rights reserved
+      </p>
+    </div>
+  </footer>
+
+  <a href="#" id="scroll-top" class="scroll-top"><i class="bi bi-arrow-up-short"></i></a>
+  <div id="preloader"></div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    window.addEventListener('load', () => { const p = document.getElementById('preloader'); if(p) { p.style.opacity = '0'; setTimeout(() => p.remove(), 500); } });
+    const st = document.querySelector('.scroll-top');
+    document.addEventListener('scroll', () => { window.scrollY > 100 ? st.classList.add('active') : st.classList.remove('active'); });
+    st?.addEventListener('click', e => { e.preventDefault(); window.scrollTo({top:0, behavior:'smooth'}); });
+    const mt = document.querySelector('.mobile-nav-toggle');
+    if (mt) mt.addEventListener('click', () => { document.body.classList.toggle('mobile-nav-active'); mt.classList.toggle('bi-list'); mt.classList.toggle('bi-x'); });
+
+    // Drag & Drop
+    const zone = document.getElementById('uploadZone');
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+    zone.addEventListener('drop', e => {
+
+      e.preventDefault();
+
+      zone.classList.remove('dragover');
+
+      if (e.dataTransfer.files.length) {
+
+        const droppedFile =
+            e.dataTransfer.files[0];
+
+        // ==============================
+        // UPDATE FILE INPUT
+        // ==============================
+
+        const dt = new DataTransfer();
+
+        dt.items.add(droppedFile);
+
+        document.getElementById(
+            'imageInput'
+        ).files = dt.files;
+
+        // ==============================
+        // SHOW PREVIEW
+        // ==============================
+
+        handleFile(droppedFile);
+
+      }
+
+    });
+
+    function handleFileSelect(e) { if(e.target.files.length) handleFile(e.target.files[0]); }
+
+    function handleFile(file) {
+      const allowedMimeTypes = [
+        'image/jpeg',
+        'image/png',
+        'image/tiff',
+        'image/tif',
+        'application/octet-stream',
+        ''
+      ];
+
+      const allowedExtensions = [
+        '.jpg',
+        '.jpeg',
+        '.png',
+        '.tif',
+        '.tiff'
+      ];
+
+      const fileName = file.name.toLowerCase();
+
+      const hasValidExtension = allowedExtensions.some(
+        ext => fileName.endsWith(ext)
+      );
+
+      const hasValidMime = allowedMimeTypes.includes(
+        file.type
+      );
+
+      if (!hasValidExtension && !hasValidMime) {
+        alert(
+          'Please upload a JPG, PNG, or TIFF image.'
+        );
+        document.getElementById(
+          'imageInput'
+        ).value = '';
+        return;
+      }
+
+      if (file.size > 10 * 1024 * 1024) {
+        alert(
+          'File size must be under 10MB.'
+        );
+        document.getElementById(
+          'imageInput'
+        ).value = '';
+        return;
+      }
+
+      // Show preview
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = document.getElementById('previewImg');
+        img.src = e.target.result;
+        img.style.display = 'block';
+        document.getElementById('previewPlaceholder').style.display = 'none';
+        document.getElementById('previewBox').classList.add('has-image');
+        document.getElementById('previewLabel').textContent = file.name;
+      };
+      reader.readAsDataURL(file);
+
+      // Show file info
+      document.getElementById('fileName').textContent = file.name;
+      document.getElementById('fileSize').textContent = (file.size / 1024).toFixed(1) + ' KB — ' + file.type;
+      document.getElementById('fileInfo').style.display = 'block';
+      document.getElementById('analyzeBtn').disabled = false;
+    }
+
+  </script>
+
+  <!-- AI Processing Overlay -->
+
+  <div id="processingOverlay" class="processing-overlay">
+
+    <div class="processing-box">
+
+      <div class="spinner-border text-primary mb-4"
+          style="width:4rem;height:4rem;"
+          role="status">
+      </div>
+
+      <h4 class="mb-3">
+        AI Analysis in Progress
+      </h4>
+
+      <p id="processingText">
+        Uploading Retina Image...
+      </p>
+
+      <div class="progress mt-4">
+
+        <div id="processingBar"
+            class="progress-bar progress-bar-striped progress-bar-animated"
+            style="width:0%">
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+
+    function startProcessing() {
+
+      document.getElementById(
+          'analyzeBtn'
+      ).disabled = true;
+
+      const overlay = document.getElementById(
+          "processingOverlay"
+      );
+
+      const text = document.getElementById(
+          "processingText"
+      );
+
+      const bar = document.getElementById(
+          "processingBar"
+      );
+
+      overlay.style.display = "flex";
+
+      const steps = [
+
+          "Uploading Retina Image...",
+
+          "Running EfficientNet-B3 Analysis...",
+
+          "Generating GradCAM Heatmap...",
+
+          "Generating AI Recommendation...",
+
+          "Preparing Clinical Report..."
+      ];
+
+      let progress = 0;
+      let index = 0;
+
+      const interval = setInterval(() => {
+
+          if (index < steps.length) {
+
+              text.innerText = steps[index];
+
+              progress += 20;
+
+              bar.style.width = progress + "%";
+
+              index++;
+
+          } else {
+
+              clearInterval(interval);
+
+          }
+
+      }, 1500);
+
+      return true;
+    }
+
+  </script>
+</body>
+</html>
