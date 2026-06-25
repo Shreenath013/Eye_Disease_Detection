@@ -15,7 +15,9 @@ def get_efficientnet(num_classes=3):
     # EfficientNet-B3 classifier input features = 1536
     # (EfficientNet-B0 uses 1280 features)
     """
-    model = models.efficientnet_b3(weights=models.EfficientNet_B3_Weights.DEFAULT)
+    model = models.efficientnet_b3(
+        weights=None
+    )
 
     # Phase-1: freeze entire backbone
     for param in model.parameters():

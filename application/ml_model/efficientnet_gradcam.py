@@ -155,5 +155,21 @@ def generate_gradcam(image_path):
     )
 
     logger.info(f"GradCAM saved: {save_path}")
+    
+    # ==============================
+    # FREE MEMORY
+    # ==============================
+
+    del outputs
+    del input_tensor
+    del grayscale_cam
+    del heatmap
+    del overlay
+
+    import gc
+    gc.collect()
+
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
 
     return save_path
