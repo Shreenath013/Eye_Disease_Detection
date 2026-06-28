@@ -6,7 +6,7 @@
   <meta charset="utf-8">
   <meta content="width=device-width, initial-scale=1.0" name="viewport">
   <title>AI-Based Retinal Myopia Detection System</title>
-  <link rel="icon" type="image/png" href="{% static 'images/favicon.png' %}">
+  <link rel="icon" type="image/png" href="{% static 'images/favicon.jpg' %}">
   <meta name="description"
       content="RetinaAI is an AI-powered retinal image analysis platform for automated myopia detection and pathological myopia classification using EfficientNet-B3 deep learning architecture with GradCAM explainable AI visualization.">
 
@@ -97,10 +97,22 @@
     .hero .btn-outline-custom:hover { background: var(--accent-color); color: #fff; }
     .hero-visual { background: white; border-radius: 16px; box-shadow: 0 20px 60px rgba(25,119,204,0.15); padding: 30px; position: relative; }
     .hero-visual .eye-icon { font-size: 100px; color: var(--accent-color); opacity: 0.15; position: absolute; top: 20px; right: 20px; }
-    .retina-graphic { width: 100%; height: 280px; background: linear-gradient(135deg, #0a1628 0%, #1a2a4a 40%, #0d1f3c 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
-    .retina-graphic::before { content: ''; position: absolute; width: 200px; height: 200px; border-radius: 50%; background: radial-gradient(circle, rgba(255,165,50,0.9) 0%, rgba(220,80,20,0.6) 30%, rgba(180,40,10,0.3) 60%, transparent 80%); top: 50%; left: 50%; transform: translate(-50%, -50%); }
-    .retina-graphic::after { content: ''; position: absolute; width: 8px; height: 8px; background: #fff; border-radius: 50%; top: 50%; left: 55%; transform: translate(-50%, -50%); box-shadow: 0 0 20px 10px rgba(255,255,255,0.3); }
-    .retina-label { position: absolute; bottom: 12px; right: 12px; background: rgba(25,119,204,0.85); color: white; font-size: 11px; padding: 4px 10px; border-radius: 4px; font-family: var(--nav-font); }
+    .retina-graphic{
+        height: 320px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 12px;
+        background: #000;
+        overflow: hidden;
+    }
+
+    .retina-image{
+        max-width: 72%;
+        max-height: 72%;
+        object-fit: contain;
+    }
+    .retina-label { position: absolute; bottom: 120px; right: 50px; background: rgba(25,119,204,0.85); color: white; font-size: 11px; padding: 4px 10px; border-radius: 4px; font-family: var(--nav-font); }
     .stat-chips { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
     .stat-chip { background: var(--accent-color); color: white; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 500; text-align: center; flex: 1; min-width: 80px; }
     .stat-chip span { display: block; font-size: 20px; font-weight: 700; }
@@ -249,6 +261,9 @@
           <div class="col-lg-6">
             <div class="hero-visual">
               <div class="retina-graphic">
+                <img src="{% static 'images/Fundus_image.jpg' %}"
+                  alt="Fundus Image"
+                  class="retina-image">
                 <div class="retina-label">Fundus Image — Retinal Scan</div>
               </div>
               <div class="stat-chips mt-3">
